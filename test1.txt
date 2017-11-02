@@ -5,4 +5,4 @@ y="There is a # in this quote"
 y="There is a # in this quote" # Actual comment
 z='full code'
 z='quote with #'
-z='quote with \\'#'
+z='quote with \'  # fake comments'
