@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+import sys
+
 def find_comment(line):
     # Search for a comment in a line. If there is a comment, separate it out
     line = line.strip()
@@ -17,6 +19,7 @@ def find_comment(line):
             in_quote = ch
         # We are already in a quote, so check if this closes it
         elif ch == in_quote:
+            # TODO Do a real escape test.
             if i >= 1 and line[i-1] != "\\":
                 in_quote = ""
         if ch == "#" and in_quote == "":
@@ -25,6 +28,10 @@ def find_comment(line):
             return result.strip(), comment.strip()
     result = line
     return result, "" # just return the entire line with no comment
+
+for line in sys.stdin:
+    print find_comment(line)
+
 
 
 

@@ -1,0 +1,8 @@
+# The entire line is a comment
+x="hello world" # comment after hello world
+x="There is no comment on this line"
+y="There is a # in this quote"
+y="There is a # in this quote" # Actual comment
+z='full code'
+z='quote with #'
+z='quote with \\'#'
