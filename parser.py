@@ -4,14 +4,30 @@ import sys, termcolor
 from termcolor import colored
 
 class QUOTES:
+    """
+    Keep a list of all the quotes that are found in the program.
+    Give out a unique ID for each quote for later replacement
+    """
     def __init__(self):
         self.count = 0
         self.quotes = {}
+    
     def add_quote(self, text, char='"'):
-        quote_id = "__QUOTE_{}__".format(self.count)
-        self.count += 1
-        self.quotes[quote_id] = (char,text)
+        try:
+            # If the quote already exists, get the quote id
+            quote_id = self.quotes.keys()[
+            self.quotes.values().index((char,text))]
+        except:
+            quote_id = "__QUOTE_{}__".format(self.count)
+            self.count += 1
+            self.quotes[quote_id] = (char,text)
         return quote_id
+    
+    def get_quote(self, quote_id):
+        quote_char, quote = self.quotes[quote_id]
+        #quote = repr(quote)
+        quote = quote.replace("\n","\\n").replace("\t","\\t")
+        return "{0}{1}{0}".format(quote_char, quote)
 
 def find_comment(line):
     # Search for a comment in a line. If there is a comment, separate it out
@@ -66,23 +82,22 @@ def remove_quotes(QUOTE_MANAGER, line):
                 quote_char = ""
                 quote_start = i+1
     output_line += [line[quote_start:]]
-    return output_line
+    return "".join(output_line)
 
 def add_semicolon(line):
     """
     Adds a semi colon if the line needs it
     line: (str) line to check
-    return: (list) list of each line
+    return: (str) the line
     """
-    retval = []
     line = line.strip()
-    if line[0] == "#":
-        # If its a comment, just skip the rest of the parsing
-        return [line]
     words = line.split()
     # return nothing if there are no words
     if not words or len(line) == 0:
-        return []
+        return ""
+    if line[0] == "#":
+        # If its a comment, just skip the rest of the parsing
+        return line
 
     # Words to check in the beginning to avoid
     end_words = ["do", "then", "else", "in"]
@@ -99,42 +114,96 @@ def add_semicolon(line):
     
     if add:
         line = line + ";"
-    return [line]
+    return line
 
-def split_brackets(line):
+def split_lines(line):
     line = line.strip()
+    words = line.split()
+    # return nothing if there are no words
+    if not words or len(line) == 0:
+        return ""
     if "{" in line and "()" in line:
         if line.index("()") < line.index("{"):
             line = line.replace("{","\n{\n")
-    return [ l.strip() for l in line.split("\n") if l != "" ]
+    # Check for certain words and put them on their own line
+    split_words = ("then", "do", "else")
+    for w in split_words:
+        if w == words[0]:
+            line = line.replace(w, w + "\n", 1)
+    return line.strip()
 
-def strip_comments(line):
-    retval = []
+def split_comments(line):
+    comment = ""
     pos = -1
     if "#" in line:
         pos = line.index("#")
-        retval += [line[pos:].strip()]
-        retval += [line[:pos].strip()]
-    else:
-        retval += [line.strip()]
-    return retval
+        comment= line[pos:]
+        line = line[:pos]
+    return line.strip(), comment.strip()
+
+def parse_script(QUOTE_MANAGER, text):
+    # Remove all the quotes in the string
+    text = remove_quotes(QUOTE_MANAGER, text)
+    # Substitute the switch end character so we can parse end lines
+    text = text.replace(";;", "__CASE_SPECIAL_CHAR__")
+    # Get each command separated on a new line
+    text = text.replace(";", ";\n")
+    # Replace the special character back into it
+    text = text.replace("__CASE_SPECIAL_CHAR__", "\n;;\n")   
+
+    # split all the lines
+    text = text.split("\n")
+    # Strip whitespace from the lines
+    text = [ l.strip() for l in text ]
+    # Remove empty lines from the text
+    text = filter(None, text)
+    
+    # Split all the comments
+    lines = []
+    for i in text:
+        # Remove duplicate newlines
+        i = " ".join(i.split())
+        i, comment = split_comments(i)
+        i = add_semicolon(i)
+        i = split_lines(i)
+
+        if comment != "":
+            lines += [comment]
+        if i != "":
+            lines += [i]
+
+    # Condense and resplit the lines
+    lines = "\n".join(lines)
+    # split all the lines
+    lines = lines.split("\n")
+    # Strip whitespace from the lines
+    lines = [ l.strip() for l in lines ]
+    # Remove empty lines from the text
+    lines = filter(None, lines)
+    return lines
 
 def retab(lines):
     # Spaces for tabs
     tab_value = "    "
     tab_level = 0
     result = []
-    tab_inc = ["do", "then", "{", "else", "elif"]
-    tab_dec = ["fi;", "done;", "};", "else", "esac;", "elif"]
+    in_case = False
+    tab_inc = ["do", "then", "{", "else"]
+    tab_dec = ["fi;", "done;", "};", "else", "esac;", "elif", ";;"]
     for l in lines:
         words = l.split()
         for dec in tab_dec:
             if words[0] == dec:
                 tab_level -= 1
+                if dec == "esac;":
+                    in_case = False
         # Add the tabs to the level
         l = tab_value*tab_level + l
-        # Have a special case for "in"
+        # Have a special case for "switches"
         if words[-1] == "in":
+            in_case = True
+            tab_level += 1 # Add an extra for reasons
+        if l[-1] == ")" and in_case:
             tab_level += 1
         for inc in tab_inc:
             if words[0] == inc:
@@ -151,49 +220,23 @@ if len(sys.argv) < 2:
     quit()
 
 # open the file and start processing the lines
-with open(sys.argv[1]) as fil:
-    # Remove all the quotes in the string
-    lines = remove_quotes(QUOTE_MANAGER, fil.read())
-    # condense all the lines into a single line
-    lines = "".join(lines)
-    # Substitute the switch end character so we can parse end lines
-    lines = lines.replace(";;", "__CASE_SPECIAL_CHAR__")
-    # Get each command separated on a new line
-    lines = lines.replace(";", ";\n")
-    # Clean up brackets
-    
-    # Replace the special character back into it
-    lines = lines.replace("__CASE_SPECIAL_CHAR__", "\n;;\n")   
-    # Separate each command into a new line
-    lines = lines.split("\n")
-    # remove excess space from each line
-    lines = [ " ".join(l.split()) for l in lines ]
-    # Strip whitespace from the lines
-    lines = [ l.strip() for l in lines ]
-    lines = filter(None, lines)
-    
-    # Strip all the comments
-    new_lines = []
-    for i in lines:
-        new_lines += strip_comments(i)
-    lines = []
-    
-    # Split any brackets for formating reasons
-    for i in new_lines:
-        lines += split_brackets(i)
-    
-    new_lines = []
-    # Add semicolons to all lines that need it
-    for i in lines:
-        new_lines += add_semicolon(i)
+lines_pre = ""
+try:
+    with open(sys.argv[1]) as fil:
+        lines_pre = fil.read()
+except:
+    pass
 
-    lines = retab(new_lines)
-
+if lines_pre != "":
+    lines = parse_script(QUOTE_MANAGER, lines_pre)
+    lines = retab(lines)
     for i in lines:
+        if i.strip()[0] == "#":
+            i = colored(i,"green")
         print i
 
-    for k,v in QUOTE_MANAGER.quotes.iteritems():
-        print k +": "+colored(repr(v),"red")
+    for k in QUOTE_MANAGER.quotes:
+        print k +": "+colored(QUOTE_MANAGER.get_quote(k),"red")
 
 
 
