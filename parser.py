@@ -65,7 +65,10 @@ def remove_quotes(QUOTE_MANAGER, line):
                 output_line += [quote_id]
                 quote_char = ""
                 quote_start = i+1
+    output_line += [line[quote_start:]]
     return output_line
+
+#def parse
 
 QUOTE_MANAGER = QUOTES()
 
@@ -77,12 +80,22 @@ if len(sys.argv) < 2:
 with open(sys.argv[1]) as fil:
     # Remove all the quotes in the string
     lines = remove_quotes(QUOTE_MANAGER, fil.read())
-    # condense all the lines into a single line, then resplit by newlines
-    lines = "".join(lines).split("\n")
+    # condense all the lines into a single line
+    lines = "".join(lines)
     
+    # separate each command into a new line
+    # Substitute the switch end character so we can parse end lines
+    lines = lines.replace(";;", "__CASE_SPECIAL_CHAR__")
+    # Get each command separated on a new line
+    lines = lines.replace(";", ";\n")
+    # Replace the special character back into it
+    lines = lines.replace("__CASE_SPECIAL_CHAR__", ";;")
+   
+    lines = lines.split("\n")
     # remove excess space from each line
     lines = [ " ".join(l.split()) for l in lines ]
 
+    print lines
     for i in lines:
         print i
 
