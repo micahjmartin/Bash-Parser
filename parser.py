@@ -182,7 +182,7 @@ def parse_script(QUOTE_MANAGER, text):
     lines = filter(None, lines)
     return lines
 
-def retab(lines):
+def retab_lines(lines):
     # Spaces for tabs
     tab_value = "    "
     tab_level = 0
@@ -212,32 +212,53 @@ def retab(lines):
         
     return result
 
+def parse(text, comments=True, retab=True, oneline=False, strip=False):
+    # Handle the args
+    if oneline:
+        comments = False
+        retab = False
+    elif retab or comments:
+        oneline = False
 
-QUOTE_MANAGER = QUOTES()
+    # Create a manager for all the quotes
+    QUOTE_MANAGER = QUOTES()
+    lines = parse_script(QUOTE_MANAGER, text)
+    # Strip comments
+    new_lines = []
+    for l in lines:
+        if not comments:
+            if l[0] == "#":
+                continue
+        if "__QUOTE_" in l:
+            for k in QUOTE_MANAGER.quotes:
+                if k in l:
+                    q = QUOTE_MANAGER.get_quote(k)
+                    l = l.replace(k,q)
+        new_lines += [l]
+    lines = new_lines
+    # Retab
+    if retab:
+        lines = retab_lines(lines)
+    
+    if oneline:
+        return " ".join(lines)
+    return "\n".join(lines)
 
-if len(sys.argv) < 2:
-    print "Usage "+__file__+" <filename>"
-    quit()
+def main():
+    if len(sys.argv) < 2:
+        print "Usage "+__file__+" <filename>"
+        quit()
+    # open the file and start processing the lines
+    lines_pre = ""
+    try:
+        with open(sys.argv[1]) as fil:
+            lines_pre = fil.read()
+    except:
+        pass
 
-# open the file and start processing the lines
-lines_pre = ""
-try:
-    with open(sys.argv[1]) as fil:
-        lines_pre = fil.read()
-except:
-    pass
+    if lines_pre != "":
+        print parse(lines_pre, oneline=True)
 
-if lines_pre != "":
-    lines = parse_script(QUOTE_MANAGER, lines_pre)
-    lines = retab(lines)
-    for i in lines:
-        if i.strip()[0] == "#":
-            i = colored(i,"green")
-        print i
-
-    for k in QUOTE_MANAGER.quotes:
-        print k +": "+colored(QUOTE_MANAGER.get_quote(k),"red")
-
-
+main()
 
 

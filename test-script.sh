@@ -1,6 +1,6 @@
 case $1 in
 [0-9] )
-	echo "It's a number"; exit; ;;
+	echo "It\"s a number"; exit; ;;
 [a-z] )
 	echo "Its a letter"; 
 	;;
@@ -20,9 +20,9 @@ echo blah
 else
 	echo hi
 fi
-x='
+x='''
    x is a multi
-line
+lins
 \tquote
-'
+'''
 fun
