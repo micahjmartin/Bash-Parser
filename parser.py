@@ -73,8 +73,19 @@ if len(sys.argv) < 2:
     print "Usage "+__file__+" <filename>"
     quit()
 
+# open the file and start processing the lines
 with open(sys.argv[1]) as fil:
-    print remove_quotes(QUOTE_MANAGER, fil.read())
+    # Remove all the quotes in the string
+    lines = remove_quotes(QUOTE_MANAGER, fil.read())
+    # condense all the lines into a single line, then resplit by newlines
+    lines = "".join(lines).split("\n")
+    
+    # remove excess space from each line
+    lines = [ " ".join(l.split()) for l in lines ]
+
+    for i in lines:
+        print i
+
     for k,v in QUOTE_MANAGER.quotes.iteritems():
         print k +": "+colored(repr(v),"red")
 

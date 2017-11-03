@@ -2,9 +2,9 @@ dsfasdf = "quote1";
 asdf
 sad
 fa
-sdf
-asdf
-youup = "quote2"
+sdf	 w
+asdf asdf ad      sadf  s
+youup    = "quote2"
 text_quote = '
 dovecot_conf {
 	conf = bad_stuff
