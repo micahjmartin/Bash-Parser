@@ -28,7 +28,7 @@ class QUOTES:
         #quote = repr(quote)
         quote = quote.replace("\n","\\n").replace("\t","\\t")
         return "{0}{1}{0}".format(quote_char, quote)
-
+"""
 def find_comment(line):
     # Search for a comment in a line. If there is a comment, separate it out
     line = line.strip()
@@ -55,7 +55,7 @@ def find_comment(line):
             return result.strip(), comment.strip()
     result = line
     return result, "" # just return the entire line with no comment
-
+"""
 def remove_quotes(QUOTE_MANAGER, line):
     # Remove all the quotes in the line and replace them with a unique ID
     line = line.strip()
