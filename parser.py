@@ -68,7 +68,81 @@ def remove_quotes(QUOTE_MANAGER, line):
     output_line += [line[quote_start:]]
     return output_line
 
-#def parse
+def add_semicolon(line):
+    """
+    Adds a semi colon if the line needs it
+    line: (str) line to check
+    return: (list) list of each line
+    """
+    retval = []
+    line = line.strip()
+    if line[0] == "#":
+        # If its a comment, just skip the rest of the parsing
+        return [line]
+    words = line.split()
+    # return nothing if there are no words
+    if not words or len(line) == 0:
+        return []
+
+    # Words to check in the beginning to avoid
+    end_words = ["do", "then", "else", "in"]
+    # Defaul to adding a semicolon
+    add = True
+    # Check if the line ends in one of these words
+    for w in end_words:
+        # if there is an echo before, dont worry about it
+        if w == words[-1] and "echo" not in words:
+            add = False
+            
+    if line[-1] in (";", "{", "(", ")"):
+        add = False
+    
+    if add:
+        line = line + ";"
+    return [line]
+
+def split_brackets(line):
+    line = line.strip()
+    if "{" in line and "()" in line:
+        if line.index("()") < line.index("{"):
+            line = line.replace("{","\n{\n")
+    return [ l.strip() for l in line.split("\n") if l != "" ]
+
+def strip_comments(line):
+    retval = []
+    pos = -1
+    if "#" in line:
+        pos = line.index("#")
+        retval += [line[pos:].strip()]
+        retval += [line[:pos].strip()]
+    else:
+        retval += [line.strip()]
+    return retval
+
+def retab(lines):
+    # Spaces for tabs
+    tab_value = "    "
+    tab_level = 0
+    result = []
+    tab_inc = ["do", "then", "{", "else", "elif"]
+    tab_dec = ["fi;", "done;", "};", "else", "esac;", "elif"]
+    for l in lines:
+        words = l.split()
+        for dec in tab_dec:
+            if words[0] == dec:
+                tab_level -= 1
+        # Add the tabs to the level
+        l = tab_value*tab_level + l
+        # Have a special case for "in"
+        if words[-1] == "in":
+            tab_level += 1
+        for inc in tab_inc:
+            if words[0] == inc:
+                tab_level += 1
+        result += [l]
+        
+    return result
+
 
 QUOTE_MANAGER = QUOTES()
 
@@ -82,20 +156,39 @@ with open(sys.argv[1]) as fil:
     lines = remove_quotes(QUOTE_MANAGER, fil.read())
     # condense all the lines into a single line
     lines = "".join(lines)
-    
-    # separate each command into a new line
     # Substitute the switch end character so we can parse end lines
     lines = lines.replace(";;", "__CASE_SPECIAL_CHAR__")
     # Get each command separated on a new line
     lines = lines.replace(";", ";\n")
+    # Clean up brackets
+    
     # Replace the special character back into it
-    lines = lines.replace("__CASE_SPECIAL_CHAR__", ";;")
-   
+    lines = lines.replace("__CASE_SPECIAL_CHAR__", "\n;;\n")   
+    # Separate each command into a new line
     lines = lines.split("\n")
     # remove excess space from each line
     lines = [ " ".join(l.split()) for l in lines ]
+    # Strip whitespace from the lines
+    lines = [ l.strip() for l in lines ]
+    lines = filter(None, lines)
+    
+    # Strip all the comments
+    new_lines = []
+    for i in lines:
+        new_lines += strip_comments(i)
+    lines = []
+    
+    # Split any brackets for formating reasons
+    for i in new_lines:
+        lines += split_brackets(i)
+    
+    new_lines = []
+    # Add semicolons to all lines that need it
+    for i in lines:
+        new_lines += add_semicolon(i)
 
-    print lines
+    lines = retab(new_lines)
+
     for i in lines:
         print i
 
