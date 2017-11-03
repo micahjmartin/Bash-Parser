@@ -1,8 +1,15 @@
-# The entire line is a comment
-x="hello world" # comment after hello world
-x="There is no comment on this line"
-y="There is a # in this quote"
-y="There is a # in this quote" # Actual comment
-z='full code'
-z='quote with #'
-z='quote with \'  # fake comments'
+dsfasdf = "quote1"; 
+asdf
+sad
+fa
+sdf
+asdf
+youup = "quote2"
+text_quote = '
+dovecot_conf {
+	conf = bad_stuff
+} else
+{ \'d\'
+asdfasdf
+}
+'

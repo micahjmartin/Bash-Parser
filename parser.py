@@ -1,6 +1,17 @@
 #!/usr/bin/python
 
-import sys
+import sys, termcolor
+from termcolor import colored
+
+class QUOTES:
+    def __init__(self):
+        self.count = 0
+        self.quotes = {}
+    def add_quote(self, text, char='"'):
+        quote_id = "__QUOTE_{}__".format(self.count)
+        self.count += 1
+        self.quotes[quote_id] = (char,text)
+        return quote_id
 
 def find_comment(line):
     # Search for a comment in a line. If there is a comment, separate it out
@@ -29,9 +40,43 @@ def find_comment(line):
     result = line
     return result, "" # just return the entire line with no comment
 
-for line in sys.stdin:
-    print find_comment(line)
+def remove_quotes(QUOTE_MANAGER, line):
+    # Remove all the quotes in the line and replace them with a unique ID
+    line = line.strip()
+    quote_start = 0
+    quote_char = "" # character that we are searching for if we are in a quote
+    quote_chars = ("'", '"') # The characters that we count as a quote
 
+    output_line = []
+    # Loop through every character in the line
+    for i in range(len(line)):
+        ch = line[i] # The character at a given index
+        # If we are not in a quote and we find a quote, set the quote character
+        if ch in quote_chars and quote_char == "":
+            output_line += [line[quote_start:i]]
+            quote_char = ch
+            quote_start = i
+        # We are already in a quote, so check if this closes it
+        elif ch == quote_char:
+            # TODO Do a real escape test.
+            if i >= 1 and line[i-1] != "\\":
+                quote_id = QUOTE_MANAGER.add_quote(line[quote_start+1:i],
+                    quote_char)
+                output_line += [quote_id]
+                quote_char = ""
+                quote_start = i+1
+    return output_line
+
+QUOTE_MANAGER = QUOTES()
+
+if len(sys.argv) < 2:
+    print "Usage "+__file__+" <filename>"
+    quit()
+
+with open(sys.argv[1]) as fil:
+    print remove_quotes(QUOTE_MANAGER, fil.read())
+    for k,v in QUOTE_MANAGER.quotes.iteritems():
+        print k +": "+colored(repr(v),"red")
 
 
 
